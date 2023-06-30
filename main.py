@@ -35,6 +35,8 @@ class App(tk.Tk):
 
         # create instance of DataTable class
         self.data_table = DataTable(self)
+        # grid DataTable inside the frame
+        self.data_table.grid(row=0, column=0, sticky='nsew')
         # placing DataTable on screen
         self.data_table.place(relx=0.2, rely=0.15, relheight=0.7, relwidth=0.7)
         # creating pandas DataFrame from csv file, then passing DataFrame to DataTable
@@ -55,16 +57,34 @@ class DataTable(ttk.Treeview):
     def __init__(self, parent):
         # Calls the initialization method of the parent class 'ttk.Treeview'
         super().__init__(parent)
+        # Create a grid layout for parent
+        parent.grid()
+
         style = ttk.Style()
-        scroll_Y = ttk.Scrollbar(parent, orient=tk.HORIZONTAL, command=self.yview)
-        style.configure(scroll_Y, background=WHITE, arrowcolour=WHITE, bordercolour=BLACK)
-        scroll_X = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=self.xview)
-        style.configure(scroll_X, background=WHITE, arrowcolour=WHITE, bordercolour=BLACK)
-        scroll_Y.pack(side=tk.RIGHT, fill=BOTH)
-        scroll_X.pack(side=tk.BOTTOM, fill=BOTH)
-        # Configures the Treeview to use the scrollbars for their respective views
+
+        # Scrollbars only show if there are enough rows/columns to overflow DataTable 
+
+        # Create vertical scrollbar
+        scroll_Y = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=self.yview)
+        style.configure("Vertical.TScrollbar", background=WHITE, arrowcolour=WHITE, bordercolour=BLACK)
+        scroll_Y.grid(row=0, column=1, sticky='ns')  # Grid vertical scrollbar to the right of the Treeview
+
+        # Create horizontal scrollbar
+        scroll_X = ttk.Scrollbar(parent, orient=tk.HORIZONTAL, command=self.xview)
+        style.configure("Horizontal.TScrollbar", background=WHITE, arrowcolour=WHITE, bordercolour=BLACK)
+        scroll_X.grid(row=1, column=0, sticky='ew')  # Grid horizontal scrollbar below the Treeview
+
+        # Allow the Treeview to expand
+        parent.grid_columnconfigure(0, weight=1)  # Allows Treeview to expand horizontally
+        parent.grid_rowconfigure(0, weight=1)  # Allows Treeview to expand vertically
+
+        # Configure the Treeview to use the scrollbars
         self.configure(yscrollcommand=scroll_Y.set, xscrollcommand=scroll_X.set)
+        # Place Treeview in the grid
+        self.grid(row=0, column=0, sticky="nsew")
+
         self.stored_dataframe = pd.DataFrame()
+
 
     def set_datatable(self, dataframe):
         # Stores the provided dataframe
