@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import *
+import pandas as pd
 
 # constant variables for common colours
 WHITE='#FFFFFF'
@@ -31,6 +32,12 @@ class App(tk.Tk):
         self.import_button = tk.Button(self, text='Import Data', command=self.import_button_click, height=self.button_size, width=self.button_size, relief='solid', borderwidth=2)
         self.import_button.place(relx=0.07, rely=0.37)  # pack it into the window with some padding
 
+        # create data table
+        self.data_table = DataTable(self)
+        self.data_table.place(relx=0.2, rely=0.15, relheight=0.7, relwidth=0.7)
+
+        self.data_table.set_datatable(pd.read_csv('employee_data.csv'))
+
     # define export button click function
     def export_button_click(self):
             print('Export Button clicked')
@@ -38,7 +45,36 @@ class App(tk.Tk):
     # define import button click function
     def import_button_click(self):
             print('Import Button clicked')
-        
+
+
+class DataTable(ttk.Treeview):
+    def __init__(self, parent):
+        super().__init__(parent)
+        scroll_Y = ttk.Scrollbar(parent, orient=tk.HORIZONTAL, command=self.yview)
+        scroll_X = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=self.xview)
+        scroll_Y.pack(side=tk.RIGHT, fill="y")
+        scroll_X.pack(side=tk.BOTTOM, fill="x")
+        self.configure(yscrollcommand=scroll_Y.set, xscrollcommand=scroll_X.set)
+        self.stored_dataframe = pd.DataFrame()
+
+    def set_datatable(self, dataframe):
+        self.stored_dataframe = dataframe
+        self._draw_table(dataframe)
+
+    def _draw_table(self, dataframe):
+        self.delete(*self.get_children())
+        columns = list(dataframe.columns)
+        self["columns"] = columns
+        self["show"] = "headings"
+
+        for col in columns:
+            self.heading(col, text=col)
+
+        df_rows = dataframe.to_numpy().tolist()
+        for row in df_rows:
+            self.insert("", "end", values=row)
+        return None
+
 
 if __name__ == "__main__":
     app = App()
