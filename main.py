@@ -48,8 +48,6 @@ class App(tk.Tk):
         self.data_table.grid(row=0, column=0, sticky='nsew')
         # placing DataTable on screen
         self.data_table.place(relx=0.2, rely=0.15, relheight=0.7, relwidth=0.7)
-        # creating pandas DataFrame from csv file, then passing DataFrame to DataTable
-        self.data_table.set_datatable(pd.read_csv('employee_data.csv'))
 
     # define export button click function
     def export_button_click(self):
@@ -63,7 +61,17 @@ class App(tk.Tk):
 
     # define import button click function
     def import_button_click(self):
-        print('Import Button clicked')
+        if self.data_table.get_datatable().empty:
+            try:
+                # creating pandas DataFrame from csv file, then passing DataFrame to DataTable
+                self.data_table.set_datatable(pd.read_csv('employee_data.csv'))
+                print('Data imported from CSV file')
+            except Exception as e:
+                print(f"An error occurred while importing data from CSV file: {str(e)}")
+        
+        else:
+            print('Data is already being displayed')
+
 
     def edit_button_click(self):
         selected_item = self.data_table.selection() # gets the selected item
