@@ -2,12 +2,32 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 import pandas as pd
+import random
+from random import randint
+
+# NEED TO WRITE CHANGES TO employee_data.csv in save_data()
+# NEED TO EXPORT A COPY OF employee_data.csv with a new name
 
 # constant variables for common colours
 WHITE='#FFFFFF'
 BLACK='#000000'
 
 class App(tk.Tk):
+    """
+    A tkinter GUI application for managing employee data.
+
+    This application allows users to import employee data from a CSV file into a datatable. 
+    Users can edit the data in the datatable and export the updated data back into a CSV file.
+
+    Attributes:
+    - title_label: The label that displays the title of the application.
+    - export_button: Button that, when clicked, triggers the export of data to a CSV file.
+    - import_button: Button that, when clicked, triggers the import of data from a CSV file.
+    - edit_button: Button that, when clicked, allows the user to edit data in the datatable.
+    - data_table: The datatable that displays the employee data.
+    - button_size: The constant size of the buttons.
+    """
+
     def __init__(self):
         # Calls the initialization method of the parent class 'tk.Tk'
         super().__init__()
@@ -43,18 +63,49 @@ class App(tk.Tk):
         self.data_table.grid(row=0, column=0, sticky='nsew')
         # placing DataTable on screen
         self.data_table.place(relx=0.2, rely=0.15, relheight=0.7, relwidth=0.7)
-        # creating pandas DataFrame from csv file, then passing DataFrame to DataTable
-        self.data_table.set_datatable(pd.read_csv('employee_data.csv'))
 
     # define export button click function
     def export_button_click(self):
-        print('Export Button clicked')
+        """
+        Event handler for when the 'Export Data' button is clicked.
+        Gets the current DataFrame from the DataTable object and writes it to a new CSV file in the current working directory.
+        """
+
+        # Get the current DataFrame from the data_table object
+        current_df = self.data_table.get_datatable()
+        filename = f"updated_employee_data_{randint(100, 999)}.csv"
+        # Write the DataFrame to a new CSV file
+        current_df.to_csv(filename, index=False)
+
+        print(f"{filename} saved to current working directory")
 
     # define import button click function
     def import_button_click(self):
-        print('Import Button clicked')
+        """
+        Event handler for when the 'Import Data' button is clicked.
+        If the DataTable is currently empty, imports data from a specified CSV file into the DataTable.
+        If the DataTable is not empty, it prints a message indicating that data is already being displayed.
+        """
+
+        if self.data_table.get_datatable().empty:
+            try:
+                # creating pandas DataFrame from csv file, then passing DataFrame to DataTable
+                self.data_table.set_datatable(pd.read_csv('employee_data.csv'))
+                print('Data imported from CSV file')
+            except Exception as e:
+                print(f"An error occurred while importing data from CSV file: {str(e)}")
+        
+        else:
+            print('Data is already being displayed')
+
 
     def edit_button_click(self):
+        """
+        Event handler for when the 'Edit Data' button is clicked.
+        Gets the selected item from the DataTable and opens a new window with the selected item's data.
+        If no item is selected, it prints a message indicating that no record is selected.
+        """
+
         selected_item = self.data_table.selection() # gets the selected item
         if len(selected_item) == 0:
             print('No record in the table is selected')
@@ -62,12 +113,30 @@ class App(tk.Tk):
         if selected_item:  # if something is selected
             row_values = self.data_table.item(selected_item[0])["values"]  # gets the values of the selected item
             column_names = self.data_table["columns"]  # gets the columns of the datatable
-            EditWindow(self, row_values, column_names, selected_item[0])  # opens a new window with the selected item's data
+            row_index = self.data_table.get_children().index(selected_item[0]) # gets the index of the selected row in datatable
+            EditWindow(self, row_values, column_names, selected_item[0], row_index)  # opens a new window with the selected item's data
          
 class EditWindow(tk.Toplevel):
-    def __init__(self, parent, row_values, column_names, selected_id):
+    """
+    A new window for editing a selected record in the datatable.
+
+    The window displays the current values of the record in a form.
+    The user can edit the values in the form, and click the 'Save' button to save the changes.
+
+    Attributes:
+    - parent: The App object that owns this window.
+    - row_index: The index of the selected row in the datatable.
+    - row_values: The current values of the selected record.
+    - column_names: The names of the columns in the datatable.
+    - selected_id: The unique id of the selected record in the database.
+    - entries: The list of Entry widgets in the form.
+    """
+
+    def __init__(self, parent, row_values, column_names, selected_id, row_index):  
+
         super().__init__(parent)
         self.parent = parent
+        self.row_index = row_index # index of the selected row in the datatable
         self.row_values = row_values # values for each column in datatable
         self.column_names = column_names # columns of the datatable
         self.selected_id = selected_id # unique id of selected record in database
@@ -80,16 +149,22 @@ class EditWindow(tk.Toplevel):
         # e.g. in the first iteration, the tuple will be: {0, Name}, 
         # in the second iteration, the tuple will be {1, Job Title} etc
         for i, value in enumerate(row_values):
-            print(i, value)
             tk.Label(self, text=column_names[i]).grid(row=i, column=0)  # create a label for each column
             entry = tk.Entry(self)  # create entry for each column
             entry.grid(row=i, column=1)  # add entry to grid
             entry.insert(0, value)  # add existing value to the entry
             self.entries.append(entry)  # append entry to entries list
+
         tk.Button(self, text='Save', command=self.save_data).grid(row=len(row_values), column=0, columnspan=2)  # create save button
 
     def save_data(self):
-         # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
+        """
+        Event handler for when the 'Save' button is clicked in the edit window.
+        Iterates over all Entry widgets in the edit window, retrieves the new values, and updates the DataTable and stored DataFrame accordingly.
+        Also, updates the CSV file and closes the edit window.
+        """
+
+        # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
         for i, entry in enumerate(self.entries):
             # For the current entry, we call the 'get' method to retrieve the value from the entry field. 
             # An Entry is a basic Tkinter widget to input text. The 'get' method is used to fetch the text that has been input.
@@ -100,17 +175,31 @@ class EditWindow(tk.Toplevel):
             column_name = self.column_names[i]
 
             # Now we update the value of the specific cell in the DataTable. 
-            # 'self.selected_id' represents the ID of the row being edited.
+            # 'self.row_index' represents the index of the row being edited.
             # 'column_name' is the column where the current entry resides. 
             # 'entry_value' is the new value for this cell.
-            #  set() is used to update datatable with entry data
-            self.parent.data_table.set(self.selected_id, column=column_name, value=entry_value)  
+            #  update_data() is used to update datatable with entry data
+            self.parent.data_table.update_data(self.row_index, self.selected_id, column=column_name, value=entry_value)
+
+        # Save the current state of the stored_dataframe (from the parent's data_table instance) to 'employee_data.csv'
+        # 'index=False' prevents pandas from writing row indices into the CSV file
+        self.parent.data_table.stored_dataframe.to_csv('employee_data.csv', index=False)
         
         self.destroy()  # close window
 
 
 # Defining a class to represent a csv as a table on screen
 class DataTable(ttk.Treeview):
+    """
+    A datatable for displaying employee data.
+
+    The datatable displays the data in a grid format.
+    The datatable can be populated with data from a DataFrame, and the data can be updated.
+
+    Attributes:
+    - stored_dataframe: The DataFrame that stores the data displayed in the datatable.
+    """
+
     # The initialising method for class, which takes a parent tkinter class as input
     def __init__(self, parent):
         # Calls the initialization method of the parent class 'ttk.Treeview'
@@ -141,16 +230,58 @@ class DataTable(ttk.Treeview):
         # Place Treeview in the grid
         self.grid(row=0, column=0, sticky="nsew")
 
+        # initialising a pandas DataFrame and assigning it as attribute of DataTable
+        # to be updated by DataTable() and EditWindow() methods
         self.stored_dataframe = pd.DataFrame()
 
 
+    def get_datatable(self):
+        """
+        Returns the DataFrame currently stored in the DataTable.
+        """
+
+        return self.stored_dataframe
+    
+    def update_data(self, index, item, column=None, value=None):
+        """
+        Updates a specified cell in the DataTable and the stored DataFrame with a new value.
+        Arguments:
+            - index: The index of the row to be updated.
+            - item: The ID of the item (row) in the DataTable to be updated.
+            - column: The column name of the cell to be updated.
+            - value: The new value for the cell.
+        """
+
+        # This updates the value in the displayed data table
+        if column is not None:
+            item = self.get_children()[index]
+            current_values = list(self.item(item, 'values'))
+            current_values[self['columns'].index(column)] = value
+            self.item(item, values=current_values)
+        
+        # This updates the value in the stored dataframe
+        if self.stored_dataframe is not None and column in self.stored_dataframe.columns:
+            self.stored_dataframe.loc[index, column] = value
+
     def set_datatable(self, dataframe):
+        """
+        Stores a DataFrame in the DataTable and redraws the DataTable to display the data from the DataFrame.
+        Arguments:
+            - dataframe: The DataFrame to be stored and displayed.
+        """
+
         # Stores the provided dataframe
-        self.stored_dataframe = dataframe
+        self.stored_dataframe = dataframe.reset_index(drop=True)
         # Draws the table with the data from the dataframe
         self._draw_table(dataframe)
 
     def _draw_table(self, dataframe):
+        """
+        Populates the DataTable with the data from a DataFrame.
+        Arguments:
+            - dataframe: The DataFrame whose data is to be displayed in the DataTable.
+        """
+
         # Deletes all existing children nodes in the Treeview (clearing old data)
         self.delete(*self.get_children())
         # Gets the column names from the dataframe
