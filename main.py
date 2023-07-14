@@ -181,6 +181,8 @@ class EditWindow(tk.Toplevel):
             #  update_data() is used to update datatable with entry data
             self.parent.data_table.update_data(self.row_index, self.selected_id, column=column_name, value=entry_value)
 
+        # Save the current state of the stored_dataframe (from the parent's data_table instance) to 'employee_data.csv'
+        # 'index=False' prevents pandas from writing row indices into the CSV file
         self.parent.data_table.stored_dataframe.to_csv('employee_data.csv', index=False)
         
         self.destroy()  # close window
@@ -228,6 +230,8 @@ class DataTable(ttk.Treeview):
         # Place Treeview in the grid
         self.grid(row=0, column=0, sticky="nsew")
 
+        # initialising a pandas DataFrame and assigning it as attribute of DataTable
+        # to be updated by DataTable() and EditWindow() methods
         self.stored_dataframe = pd.DataFrame()
 
 
