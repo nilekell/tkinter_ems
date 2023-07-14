@@ -2,6 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 import pandas as pd
+import random
+from random import randint
+
+# NEED TO WRITE CHANGES TO employee_data.csv in save_data()
+# NEED TO EXPORT A COPY OF employee_data.csv with a new name
 
 # constant variables for common colours
 WHITE='#FFFFFF'
@@ -48,7 +53,13 @@ class App(tk.Tk):
 
     # define export button click function
     def export_button_click(self):
-        print('Export Button clicked')
+        # Get the current DataFrame from the data_table object
+        current_df = self.data_table.get_datatable()
+        filename = f"updated_employee_data_{randint(100, 999)}.csv"
+        # Write the DataFrame to a new CSV file
+        current_df.to_csv(filename, index=False)
+
+        print(f"{filename} saved to current working directory")
 
     # define import button click function
     def import_button_click(self):
@@ -62,12 +73,15 @@ class App(tk.Tk):
         if selected_item:  # if something is selected
             row_values = self.data_table.item(selected_item[0])["values"]  # gets the values of the selected item
             column_names = self.data_table["columns"]  # gets the columns of the datatable
-            EditWindow(self, row_values, column_names, selected_item[0])  # opens a new window with the selected item's data
+            row_index = self.data_table.get_children().index(selected_item[0]) # gets the index of the selected row in datatable
+            EditWindow(self, row_values, column_names, selected_item[0], row_index)  # opens a new window with the selected item's data
          
 class EditWindow(tk.Toplevel):
-    def __init__(self, parent, row_values, column_names, selected_id):
+    def __init__(self, parent, row_values, column_names, selected_id, row_index):  
+
         super().__init__(parent)
         self.parent = parent
+        self.row_index = row_index # index of the selected row in the datatable
         self.row_values = row_values # values for each column in datatable
         self.column_names = column_names # columns of the datatable
         self.selected_id = selected_id # unique id of selected record in database
@@ -80,16 +94,16 @@ class EditWindow(tk.Toplevel):
         # e.g. in the first iteration, the tuple will be: {0, Name}, 
         # in the second iteration, the tuple will be {1, Job Title} etc
         for i, value in enumerate(row_values):
-            print(i, value)
             tk.Label(self, text=column_names[i]).grid(row=i, column=0)  # create a label for each column
             entry = tk.Entry(self)  # create entry for each column
             entry.grid(row=i, column=1)  # add entry to grid
             entry.insert(0, value)  # add existing value to the entry
             self.entries.append(entry)  # append entry to entries list
+
         tk.Button(self, text='Save', command=self.save_data).grid(row=len(row_values), column=0, columnspan=2)  # create save button
 
     def save_data(self):
-         # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
+        # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
         for i, entry in enumerate(self.entries):
             # For the current entry, we call the 'get' method to retrieve the value from the entry field. 
             # An Entry is a basic Tkinter widget to input text. The 'get' method is used to fetch the text that has been input.
@@ -100,11 +114,13 @@ class EditWindow(tk.Toplevel):
             column_name = self.column_names[i]
 
             # Now we update the value of the specific cell in the DataTable. 
-            # 'self.selected_id' represents the ID of the row being edited.
+            # 'self.row_index' represents the index of the row being edited.
             # 'column_name' is the column where the current entry resides. 
             # 'entry_value' is the new value for this cell.
-            #  set() is used to update datatable with entry data
-            self.parent.data_table.set(self.selected_id, column=column_name, value=entry_value)  
+            #  update_data() is used to update datatable with entry data
+            self.parent.data_table.update_data(self.row_index, self.selected_id, column=column_name, value=entry_value)
+
+        self.parent.data_table.stored_dataframe.to_csv('employee_data.csv', index=False)
         
         self.destroy()  # close window
 
@@ -144,9 +160,24 @@ class DataTable(ttk.Treeview):
         self.stored_dataframe = pd.DataFrame()
 
 
+    def get_datatable(self):
+        return self.stored_dataframe
+    
+    def update_data(self, index, item, column=None, value=None):
+        # This updates the value in the displayed data table
+        if column is not None:
+            item = self.get_children()[index]
+            current_values = list(self.item(item, 'values'))
+            current_values[self['columns'].index(column)] = value
+            self.item(item, values=current_values)
+        
+        # This updates the value in the stored dataframe
+        if self.stored_dataframe is not None and column in self.stored_dataframe.columns:
+            self.stored_dataframe.loc[index, column] = value
+
     def set_datatable(self, dataframe):
         # Stores the provided dataframe
-        self.stored_dataframe = dataframe
+        self.stored_dataframe = dataframe.reset_index(drop=True)
         # Draws the table with the data from the dataframe
         self._draw_table(dataframe)
 
