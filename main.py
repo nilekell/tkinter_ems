@@ -70,14 +70,17 @@ class App(tk.Tk):
         Event handler for when the 'Export Data' button is clicked.
         Gets the current DataFrame from the DataTable object and writes it to a new CSV file in the current working directory.
         """
+        try:
+            # Get the current DataFrame from the data_table object
+            current_df = self.data_table.get_datatable()
+            filename = f"updated_employee_data_{randint(100, 999)}.csv"
+            # Write the DataFrame to a new CSV file
+            current_df.to_csv(filename, index=False)
 
-        # Get the current DataFrame from the data_table object
-        current_df = self.data_table.get_datatable()
-        filename = f"updated_employee_data_{randint(100, 999)}.csv"
-        # Write the DataFrame to a new CSV file
-        current_df.to_csv(filename, index=False)
+            print(f"{filename} saved to current working directory")
 
-        print(f"{filename} saved to current working directory")
+        except Exception as e:
+            print(f"An error occurred while exporting data from CSV file: {str(e)}")
 
     # define import button click function
     def import_button_click(self):
@@ -106,15 +109,20 @@ class App(tk.Tk):
         If no item is selected, it prints a message indicating that no record is selected.
         """
 
-        selected_item = self.data_table.selection() # gets the selected item
-        if len(selected_item) == 0:
-            print('No record in the table is selected')
+        try:
+            selected_item = self.data_table.selection() # gets the selected item
+            if len(selected_item) == 0:
+                print('No record in the table is selected')
 
-        if selected_item:  # if something is selected
-            row_values = self.data_table.item(selected_item[0])["values"]  # gets the values of the selected item
-            column_names = self.data_table["columns"]  # gets the columns of the datatable
-            row_index = self.data_table.get_children().index(selected_item[0]) # gets the index of the selected row in datatable
-            EditWindow(self, row_values, column_names, selected_item[0], row_index)  # opens a new window with the selected item's data
+            if selected_item:  # if something is selected
+                row_values = self.data_table.item(selected_item[0])["values"]  # gets the values of the selected item
+                column_names = self.data_table["columns"]  # gets the columns of the datatable
+                row_index = self.data_table.get_children().index(selected_item[0]) # gets the index of the selected row in datatable
+                EditWindow(self, row_values, column_names, selected_item[0], row_index)  # opens a new window with the selected item's data
+        except Exception as e:
+            print(f"An error occurred while editing data from CSV file: {str(e)}")
+
+
          
 class EditWindow(tk.Toplevel):
     """
@@ -163,29 +171,32 @@ class EditWindow(tk.Toplevel):
         Iterates over all Entry widgets in the edit window, retrieves the new values, and updates the DataTable and stored DataFrame accordingly.
         Also, updates the CSV file and closes the edit window.
         """
+        try:
+            # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
+            for i, entry in enumerate(self.entries):
+                # For the current entry, we call the 'get' method to retrieve the value from the entry field. 
+                # An Entry is a basic Tkinter widget to input text. The 'get' method is used to fetch the text that has been input.
+                entry_value = entry.get()
 
-        # 'enumerate' is used to get both the index 'i' and the value 'entry' in each iteration.
-        for i, entry in enumerate(self.entries):
-            # For the current entry, we call the 'get' method to retrieve the value from the entry field. 
-            # An Entry is a basic Tkinter widget to input text. The 'get' method is used to fetch the text that has been input.
-            entry_value = entry.get()
+                # We retrieve the column name for the current entry from 'self.column_names' using 'i' as the index. 
+                # 'self.column_names' is a list of column names, and 'i' corresponds to the current entry's position in these columns.
+                column_name = self.column_names[i]
 
-            # We retrieve the column name for the current entry from 'self.column_names' using 'i' as the index. 
-            # 'self.column_names' is a list of column names, and 'i' corresponds to the current entry's position in these columns.
-            column_name = self.column_names[i]
+                # Now we update the value of the specific cell in the DataTable. 
+                # 'self.row_index' represents the index of the row being edited.
+                # 'column_name' is the column where the current entry resides. 
+                # 'entry_value' is the new value for this cell.
+                #  update_data() is used to update datatable with entry data
+                self.parent.data_table.update_data(self.row_index, self.selected_id, column=column_name, value=entry_value)
 
-            # Now we update the value of the specific cell in the DataTable. 
-            # 'self.row_index' represents the index of the row being edited.
-            # 'column_name' is the column where the current entry resides. 
-            # 'entry_value' is the new value for this cell.
-            #  update_data() is used to update datatable with entry data
-            self.parent.data_table.update_data(self.row_index, self.selected_id, column=column_name, value=entry_value)
+            # Save the current state of the stored_dataframe (from the parent's data_table instance) to 'employee_data.csv'
+            # 'index=False' prevents pandas from writing row indices into the CSV file
+            self.parent.data_table.stored_dataframe.to_csv('employee_data.csv', index=False)
+            
+            self.destroy() # close window
 
-        # Save the current state of the stored_dataframe (from the parent's data_table instance) to 'employee_data.csv'
-        # 'index=False' prevents pandas from writing row indices into the CSV file
-        self.parent.data_table.stored_dataframe.to_csv('employee_data.csv', index=False)
-        
-        self.destroy()  # close window
+        except Exception as e:
+            print(f"An error occurred while saving data to CSV file: {str(e)}")
 
 
 # Defining a class to represent a csv as a table on screen
@@ -252,16 +263,25 @@ class DataTable(ttk.Treeview):
             - value: The new value for the cell.
         """
 
+        try:
         # This updates the value in the displayed data table
-        if column is not None:
-            item = self.get_children()[index]
-            current_values = list(self.item(item, 'values'))
-            current_values[self['columns'].index(column)] = value
-            self.item(item, values=current_values)
+            if column is not None:
+                item = self.get_children()[index]
+                current_values = list(self.item(item, 'values'))
+                current_values[self['columns'].index(column)] = value
+                self.item(item, values=current_values)
+        except Exception as e:
+            print(f"An error occurred while updating a value in the DataTable in : {str(e)}")
         
-        # This updates the value in the stored dataframe
-        if self.stored_dataframe is not None and column in self.stored_dataframe.columns:
-            self.stored_dataframe.loc[index, column] = value
+        try:
+            # This updates the value in the stored dataframe
+            if self.stored_dataframe is not None and column in self.stored_dataframe.columns:
+                self.stored_dataframe.loc[index, column] = value
+        except Exception as e:
+            print(f"An error occurred while updating a value in the DataFrame in : {str(e)}")
+
+
+           
 
     def set_datatable(self, dataframe):
         """
@@ -270,10 +290,13 @@ class DataTable(ttk.Treeview):
             - dataframe: The DataFrame to be stored and displayed.
         """
 
-        # Stores the provided dataframe
-        self.stored_dataframe = dataframe.reset_index(drop=True)
-        # Draws the table with the data from the dataframe
-        self._draw_table(dataframe)
+        try:
+            # Stores the provided dataframe
+            self.stored_dataframe = dataframe.reset_index(drop=True)
+            # Draws the table with the data from the dataframe
+            self._draw_table(dataframe)
+        except Exception as e:
+             print(f"An error occurred while redrawing Datatable with data from DataFrame : {str(e)}")
 
     def _draw_table(self, dataframe):
         """
@@ -282,25 +305,30 @@ class DataTable(ttk.Treeview):
             - dataframe: The DataFrame whose data is to be displayed in the DataTable.
         """
 
-        # Deletes all existing children nodes in the Treeview (clearing old data)
-        self.delete(*self.get_children())
-        # Gets the column names from the dataframe
-        columns = list(dataframe.columns)
-        # Sets the columns of the Treeview to be the column names from the dataframe
-        self["columns"] = columns
-         # Configures the Treeview to display column headings
-        self["show"] = "headings"
+        try:
+            # Deletes all existing children nodes in the Treeview (clearing old data)
+            self.delete(*self.get_children())
+            # Gets the column names from the dataframe
+            columns = list(dataframe.columns)
+            # Sets the columns of the Treeview to be the column names from the dataframe
+            self["columns"] = columns
+            # Configures the Treeview to display column headings
+            self["show"] = "headings"
 
-        # Iterates over each column, setting the TreeViews's column heading to the column name  
-        for col in columns:
-            self.heading(col, text=col)
+            # Iterates over each column, setting the TreeViews's column heading to the column name  
+            for col in columns:
+                self.heading(col, text=col)
 
-        # Gets the data rows from the dataframe as a list of lists
-        df_rows = dataframe.to_numpy().tolist()
-        # Iterates over each row, inserting the row into the Treeview
-        for row in df_rows:
-            self.insert("", "end", values=row)
-        return None
+            # Gets the data rows from the dataframe as a list of lists
+            df_rows = dataframe.to_numpy().tolist()
+            # Iterates over each row, inserting the row into the Treeview
+            for row in df_rows:
+                self.insert("", "end", values=row)
+            return None
+    
+        except Exception as e:
+             print(f"An error occurred while drawing Datatable with data from DataFrame : {str(e)}")
+
 
 
 if __name__ == "__main__":
