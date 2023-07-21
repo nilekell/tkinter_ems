@@ -200,6 +200,7 @@ class EditWindow(tk.Toplevel):
 
 
 # Defining a class to represent a csv as a table on screen
+# DataTable is a subclass of ttk.Treeview
 class DataTable(ttk.Treeview):
     """
     A datatable for displaying employee data.
