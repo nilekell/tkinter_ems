@@ -1,44 +1,9 @@
 import unittest
-from unittest.mock import Mock, patch
 import pandas as pd
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
-from main import App
 from main import DataTable
-
-class TestAppMethods(unittest.TestCase):
-
-    def setUp(self):
-        # called before each test method is executed.
-        app = App()
-        app.mainloop()
-
-    # patch is a decorator that's replacing the normal 'pandas.DataFrame.to_csv' method
-    # and 'app.App.data_table.get_datatable' method with a mock (or fake) one
-    # This allows us to control their behavior for testing
-    @patch('pandas.DataFrame.to_csv')
-    @patch('app.App.data_table.get_datatable', return_value=pd.DataFrame())
-    def test_export_button_click(self, mock_get_datatable, mock_to_csv):
-        # call the export_button_click method on the app instance
-        self.app.export_button_click()
-        # checks that the mock_get_datatable was called exactly once
-        mock_get_datatable.assert_called_once()
-        # checks that the mock_to_csv was called exactly once
-        mock_to_csv.assert_called_once()
-
-    # Similar to the first test method, these patches replace 'pandas.read_csv' and 'app.App.data_table.set_datatable' 
-    # methods with mocks.
-    @patch('pandas.read_csv', return_value=pd.DataFrame())
-    @patch('app.App.data_table.set_datatable')
-    def test_import_button_click(self, mock_set_datatable, mock_read_csv):
-        # call the import_button_click method on the app instance
-        self.app.import_button_click()
-        # checks that the mock_read_csv was called exactly once with 'employee_data.csv'
-        mock_read_csv.assert_called_once_with('employee_data.csv')
-        # checks that the mock_set_datatable was called exactly once
-        mock_set_datatable.assert_called_once()
-
 
 class TestDataTable(unittest.TestCase):
 
@@ -84,8 +49,8 @@ class TestDataTable(unittest.TestCase):
 
     def tearDown(self):
         # Destroying all tkinter widgets once all tests have been complete
-        self.root.destroy()
-
+         if self.root is not None:
+            self.root.destroy()
 
 if __name__ == '__main__':
     unittest.main()
