@@ -5,9 +5,6 @@ import pandas as pd
 import random
 from random import randint
 
-# NEED TO WRITE CHANGES TO employee_data.csv in save_data()
-# NEED TO EXPORT A COPY OF employee_data.csv with a new name
-
 # constant variables for common colours
 WHITE='#FFFFFF'
 BLACK='#000000'
